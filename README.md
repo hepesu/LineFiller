@@ -14,5 +14,4 @@ Result after merged.
 Result after performed line thinning.
 <img src="fills_merged_no_contour.png"/>
 
-<br/>
 From **Project HAT** by Hepesu With :heart:
