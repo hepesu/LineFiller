@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
+from log.logger import logger
 
-
-def get_ball_structuring_element(radius):
+def get_ball_structuring_element(radius:int):
     """Get a ball shape structuring element with specific radius for morphology operation.
     The radius of ball usually equals to (leaking_gap_size / 2).
     
@@ -15,7 +15,7 @@ def get_ball_structuring_element(radius):
     return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * radius + 1, 2 * radius + 1))
 
 
-def get_unfilled_point(image):
+def get_unfilled_point(image:np.ndarray):
     """Get points belong to unfilled(value==255) area.
 
     # Arguments
@@ -29,7 +29,7 @@ def get_unfilled_point(image):
     return np.stack((x.astype(int), y.astype(int)), axis=-1)
 
 
-def exclude_area(image, radius):
+def exclude_area(image:np.ndarray, radius:int):
     """Perform erosion on image to exclude points near the boundary.
     We want to pick part using floodfill from the seed point after dilation. 
     When the seed point is near boundary, it might not stay in the fill, and would
@@ -45,7 +45,7 @@ def exclude_area(image, radius):
     return cv2.morphologyEx(image, cv2.MORPH_ERODE, get_ball_structuring_element(radius), anchor=(-1, -1), iterations=1)
 
 
-def trapped_ball_fill_single(image, seed_point, radius):
+def trapped_ball_fill_single(image:np.ndarray, seed_point:tuple, radius:int):
     """Perform a single trapped ball fill operation.
 
     # Arguments
@@ -79,7 +79,7 @@ def trapped_ball_fill_single(image, seed_point, radius):
     return pass2
 
 
-def trapped_ball_fill_multi(image, radius, method='mean', max_iter=1000):
+def trapped_ball_fill_multi(image:np.ndarray, radius:int, method='mean', max_iter=1000):
     """Perform multi trapped ball fill operations until all valid areas are filled.
 
     # Arguments
@@ -92,7 +92,7 @@ def trapped_ball_fill_multi(image, radius, method='mean', max_iter=1000):
     # Returns
         an array of fills' points.
     """
-    print('trapped-ball ' + str(radius))
+    logger.info('trapped-ball ' + str(radius))
 
     unfill_area = image
     filled_area, filled_area_size, result = [], [], []
@@ -128,7 +128,7 @@ def trapped_ball_fill_multi(image, radius, method='mean', max_iter=1000):
     return result
 
 
-def flood_fill_single(im, seed_point):
+def flood_fill_single(im:np.ndarray, seed_point:tuple):
     """Perform a single flood fill operation.
 
     # Arguments
@@ -148,7 +148,7 @@ def flood_fill_single(im, seed_point):
     return pass1
 
 
-def flood_fill_multi(image, max_iter=20000):
+def flood_fill_multi(image:np.ndarray, max_iter:int=20000):
     """Perform multi flood fill operations until all valid areas are filled.
     This operation will fill all rest areas, which may result large amount of fills.
 
@@ -159,7 +159,7 @@ def flood_fill_multi(image, max_iter=20000):
     # Returns
         an array of fills' points.
     """
-    print('floodfill')
+    logger.info("floodfill")
 
     unfill_area = image
     filled_area = []
@@ -178,7 +178,7 @@ def flood_fill_multi(image, max_iter=20000):
     return filled_area
 
 
-def mark_fill(image, fills):
+def mark_fill(image:np.ndarray, fills:list):
     """Mark filled areas with 0.
 
     # Arguments
@@ -195,7 +195,7 @@ def mark_fill(image, fills):
     return result
 
 
-def build_fill_map(image, fills):
+def build_fill_map(image:np.ndarray, fills:list):
     """Make an image(array) with each pixel(element) marked with fills' id. id of line is 0.
 
     # Arguments
@@ -204,7 +204,7 @@ def build_fill_map(image, fills):
     # Returns
         an array.
     """
-    result = np.zeros(image.shape[:2], np.int)
+    result = np.zeros(image.shape[:2], np.int_)
 
     for index, fill in enumerate(fills):
         result[fill] = index + 1
@@ -212,7 +212,7 @@ def build_fill_map(image, fills):
     return result
 
 
-def show_fill_map(fillmap):
+def show_fill_map(fillmap:np.ndarray):
     """Mark filled areas with colors. It is useful for visualization.
 
     # Arguments
@@ -229,7 +229,7 @@ def show_fill_map(fillmap):
     return colors[fillmap]
 
 
-def get_bounding_rect(points):
+def get_bounding_rect(points:list):
     """Get a bounding rect of points.
 
     # Arguments
@@ -241,7 +241,7 @@ def get_bounding_rect(points):
     return x1, y1, x2, y2
 
 
-def get_border_bounding_rect(h, w, p1, p2, r):
+def get_border_bounding_rect(h:int, w:int, p1:tuple, p2:tuple, r:int):
     """Get a valid bounding rect in the image with border of specific size.
 
     # Arguments
@@ -263,7 +263,7 @@ def get_border_bounding_rect(h, w, p1, p2, r):
     return x1, y1, x2, y2
 
 
-def get_border_point(points, rect, max_height, max_width):
+def get_border_point(points:tuple, rect:list, max_height:int, max_width:int):
     """Get border points of a fill area
 
     # Arguments
@@ -283,7 +283,7 @@ def get_border_point(points, rect, max_height, max_width):
     fill[(points[0] - border_rect[1], points[1] - border_rect[0])] = 255
 
     # Get shape.
-    _, contours, _ = cv2.findContours(fill, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours,_ = cv2.findContours(fill, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     approx_shape = cv2.approxPolyDP(contours[0], 0.02 * cv2.arcLength(contours[0], True), True)
 
     # Get border pixel.
@@ -298,7 +298,7 @@ def get_border_point(points, rect, max_height, max_width):
     return border_pixel_points, approx_shape
 
 
-def merge_fill(fillmap, max_iter=10):
+def merge_fill(fillmap:np.ndarray, max_iter:int=10):
     """Merge fill areas.
 
     # Arguments
@@ -311,7 +311,7 @@ def merge_fill(fillmap, max_iter=10):
     result = fillmap.copy()
 
     for i in range(max_iter):
-        print('merge ' + str(i + 1))
+        logger.info('merge ' + str(i + 1))
 
         result[np.where(fillmap == 0)] = 0
 

@@ -1,8 +1,8 @@
 import numpy as np
 import cv2
+from log.logger import logger
 
-
-def thinning(fillmap, max_iter=100):
+def thinning(fillmap:np.ndarray, max_iter:int=100):
     """Fill area of line with surrounding fill color.
 
     # Arguments
@@ -12,6 +12,8 @@ def thinning(fillmap, max_iter=100):
     # Returns
         an image.
     """
+    logger.info("Thinning...")
+
     line_id = 0
     h, w = fillmap.shape[:2]
     result = fillmap.copy()
